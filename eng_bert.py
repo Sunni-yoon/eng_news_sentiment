@@ -230,8 +230,13 @@ with torch.no_grad():
 
 final_accuracy = total_correct / total_samples * 100
 final_f1 = f1_score(all_labels, all_preds, average='weighted')
+final_recall = recall_score(all_labels, all_preds, average='weighted')
+final_precision = precision_score(all_labels, all_preds, average='weighted')
+
 print(f"Final Validation Accuracy: {final_accuracy:.2f}%")
 print(f"Final Validation F1-Score: {final_f1:.4f}")
+print(f"Final Validation Recall: {final_recall:.4f}")
+print(f"Final Validation Precision: {final_precision:.4f}")
 
 # --- 테스트 데이터에 대한 예측 결과 저장 ---
 all_test_preds = []
