@@ -19,6 +19,7 @@ from sklearn.metrics import f1_score
 import nltk
 from nltk.tokenize import word_tokenize
 
+
 df = pd.read_csv('./eng_bert/train.csv')
 
 from nltk.tokenize import word_tokenize
@@ -79,10 +80,12 @@ from tqdm import tqdm
 tqdm.pandas()
 word_series = df['text'].progress_apply(text_prep) 
 
+
+
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-tokenizer = AutoTokenizer.from_pretrained("mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis")
-model = AutoModelForSequenceClassification.from_pretrained("mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis")
+tokenizer = AutoTokenizer.from_pretrained("mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis", output_hidden_states=True)
+model = AutoModelForSequenceClassification.from_pretrained("mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis", output_hidden_states=True)
 
 class total_customdataset(Dataset): # left와 right 모두 같은 데이터 사용
 
@@ -115,13 +118,13 @@ class bert_model(nn.Module):
     def __init__(self, bert):
         super().__init__()
         self.bert = bert
-        self.linear1 = nn.Linear(756, 256)
+        self.linear1 = nn.Linear(768, 256)
         self.linear2 = nn.Linear(256, 2)
         self.Tanh = nn.Tanh()
         
-    def forward(self, ids, attention):
+    def forward(self, ids, attention, output_hidden_states=True):
         feature = self.bert(ids, attention)
-        feature = feature.last_hidden_state[:,0,:]
+        feature = feature.hidden_states[-1][:,0,:]
         feature = self.Tanh(self.linear1(feature))
         output = self.linear2(feature)
         
