@@ -210,43 +210,47 @@ for epoch in range(50):
             break
         '''
 
-# --- 모델 불러와서 최종 평가 ---
+# 모델 불러오기 및 평가 모드 전환
 model.load_state_dict(torch.load('./eng_bert/best_resnet_model.pth'))
 model.eval()
-total_correct = 0
-total_samples = 0
-all_preds = []
-all_labels = []
+
+all_preds_val = []
+all_labels_val = []
+all_preds_test = []
+
 with torch.no_grad():
-    for reviews, labels in total_dlr:
+    # Validation 데이터에 대한 평가
+    total_correct = 0
+    total_samples = 0
+    for reviews, labels in val_dlr:
         reviews = reviews.to(device)
         labels = labels.to(device)
         outputs = model(reviews)
         preds = torch.argmax(outputs, dim=1)
         total_correct += (preds == labels).sum().item()
         total_samples += labels.size(0)
-        all_preds.extend(preds.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
+        all_preds_val.extend(preds.cpu().numpy())
+        all_labels_val.extend(labels.cpu().numpy())
+    
+    # Test 데이터에 대한 예측
+    for reviews, _ in test_dlr:
+        reviews = reviews.to(device)
+        outputs = model(reviews)
+        preds = torch.argmax(outputs, dim=1)
+        all_preds_test.extend(preds.cpu().numpy())
 
+# Validation 지표 계산
 final_accuracy = total_correct / total_samples * 100
-final_f1 = f1_score(all_labels, all_preds, average='weighted')
-final_recall = recall_score(all_labels, all_preds, average='weighted')
-final_precision = precision_score(all_labels, all_preds, average='weighted')
+final_f1 = f1_score(all_labels_val, all_preds_val, average='weighted')
+final_recall = recall_score(all_labels_val, all_preds_val, average='weighted')
+final_precision = precision_score(all_labels_val, all_preds_val, average='weighted')
 
 print(f"Final Validation Accuracy: {final_accuracy:.2f}%")
 print(f"Final Validation F1-Score: {final_f1:.4f}")
 print(f"Final Validation Recall: {final_recall:.4f}")
 print(f"Final Validation Precision: {final_precision:.4f}")
 
-# --- 테스트 데이터에 대한 예측 결과 저장 ---
-all_test_preds = []
-with torch.no_grad():
-    for reviews, _ in total_dlr:  # 라벨은 무시합니다.
-        reviews = reviews.to(device)
-        outputs = model(reviews)
-        preds = torch.argmax(outputs, dim=1)
-        all_test_preds.extend(preds.cpu().numpy())
-
-df_inference = pd.DataFrame({'prediction': all_test_preds})
+# Test 예측 결과 저장
+df_inference = pd.DataFrame({'prediction': all_preds_test})
 df_inference.to_csv('./test_predictions.csv', index=False)
 print("Test predictions saved to 'test_predictions.csv'")
